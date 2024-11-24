@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 5px;
+        }
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .filter-container label {
+            white-space: nowrap;
+        }
+        .filter-container input,
+        .filter-container select {
+            width: 200px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .actions button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .details-button {
+            background-color: #1976d2;
+            color: white;
+            border: none;
+        }
+        .details-button i {
+            font-size: 16px;
+        }
+        .pagination {
+            display: flex;
+            justify-content: left;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        .pagination .disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination .arrow {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h3>Résultats de recherche</h3>
+        <!-- <div class="filter-container">
+            <label for="date-filter">Filtrer par Maj :</label>
+            <input type="date" id="date-filter" name="date-filter">
+            <label for="region-filter">Filtrer par Statut :</label>
+            <select id="region-filter" name="region-filter">
+                <option value="">Tous les Statuts</option>
+                <option value="actif">Actif</option>
+                <option value="inactif">Inactif</option>
+                <option value="termine">Terminé</option>
+            </select>
+            <button type="button" onclick="filterRecords()">Filtrer</button>
+        </div> -->
+        <table id="comment-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Numéro du droit</th>
+                    <th>Date de mise à jour</th>
+                    <th>Statut du droit</th>
+                    <th>Catégorie du droit</th>
+                    <th>Nature du droit</th>
+                    <th>Type de droit</th>
+                    <th>Transaction</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="comment-list">
+                <!-- Les enregistrements seront affichés ici -->
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination">
+            <!-- Les boutons de pagination seront affichés ici -->
+                    
+        </div>
+    </div>
+
+    <script>
+        // Supposons que vous ayez une liste d'enregistrements
+        const recordList = [
+            { id: 1, numero: "231984", maj: "2024-05-10", statut: "actif", categorie: "E03", nature: "Bail minier", type: "Droit", transaction: "Renouvellement" },
+            { id: 2, numero: "497716", maj: "2024-05-12", statut: "inactif", categorie: "E03", nature: "Emphytéose", type: "Droit", transaction: "Création" },
+            { id: 3, numero: "497737", maj: "2024-05-15", statut: "termine", categorie: "E03", nature: "Servitude", type: "Droit", transaction: "Amendement" },
+            { id: 4, numero: "230192", maj: "2024-05-16", statut: "actif", categorie: "U01 ", nature: "Claim", type: "Droit", transaction: "Correction" },
+            { id: 5, numero: "127775", maj: "2024-05-17", statut: "inactif", categorie: "E03", nature: "Location", type: "Droit", transaction: "Renouvellement" } 
+       
+        ];
+
+        const recordsPerPage = 5;
+        let currentPage = 1;
+
+        function displayRecords(records, page = 1) {
+            const recordListContainer = document.getElementById("comment-list");
+            recordListContainer.innerHTML = ""; // Efface le contenu précédent
+            const startIndex = (page - 1) * recordsPerPage;
+            const endIndex = page * recordsPerPage;
+            const paginatedRecords = records.slice(startIndex, endIndex);
+
+            paginatedRecords.forEach(record => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><input type="checkbox" data-record-id="${record.id}"></td>
+                    <td>${record.numero}</td>
+                    <td>${record.maj}</td>
+                    <td>${record.statut}</td>
+                    <td>${record.categorie}</td>
+                    <td>${record.nature}</td>
+                    <td>${record.type}</td>
+                    <td>${record.transaction}</td>
+                    <td class="actions">
+                        <button class="details-button" onclick="showDetails(${record.id})"><i class="fas fa-eye"></i></button>
+                    </td>
+                `;
+                recordListContainer.appendChild(row);
+            });
+
+            displayPagination(records.length, page);
+        }
+
+        function displayPagination(totalRecords, page) {
+            const paginationContainer = document.getElementById("pagination");
+            paginationContainer.innerHTML = ""; // Efface le contenu précédent
+            const totalPages = Math.ceil(totalRecords / recordsPerPage);
+
+            const prevButton = document.createElement("button");
+            prevButton.innerHTML = "&larr;";
+            prevButton.disabled = page === 1;
+            prevButton.classList.add(page === 1 ? 'disabled' : '');
+            prevButton.addEventListener('click', () => changePage(page - 1));
+            paginationContainer.appendChild(prevButton);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement("button");
+                button.innerText = i;
+                button.classList.add(i === page ? 'active' : '');
+                button.addEventListener('click', () => changePage(i));
+                paginationContainer.appendChild(button);
+            }
+
+            const nextButton = document.createElement("button");
+            nextButton.innerHTML = "&rarr;";
+            nextButton.enabled = page === totalPages;
+            nextButton.classList.add(page === totalPages ? 'enabled' : '');
+            nextButton.addEventListener('click', () => changePage(page + 1));
+            paginationContainer.appendChild(nextButton);
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            displayRecords(recordList, page);
+        }
+
+        // Fonction pour filtrer les enregistrements par date et par statut
+        function filterRecords() {
+            const date = document.getElementById("date-filter").value;
+            const statut = document.getElementById("region-filter").value;
+            const filteredRecords = recordList.filter(record => {
+                const recordDate = new Date(record.maj);
+                const selectedDate = date ? new Date(date) : null;
+
+                if (selectedDate && recordDate.toDateString() !== selectedDate.toDateString()) {
+                    return false;
+                }
+                if (statut && statut !== record.statut) {
+                    return false;
+                }
+                return true;
+            });
+            displayRecords(filteredRecords, 1);
+        }
+
+        // Fonction pour afficher les détails d'un enregistrement
+        function showDetails(recordId) {
+            alert("Détails de l'enregistrement avec l'ID : " + recordId);
+            // Ici, vous pouvez implémenter la logique pour afficher les détails de l'enregistrement
+        }
+
+        // Afficher tous les enregistrements au chargement de la page
+        displayRecords(recordList, currentPage);
+    </script>
+</body>
+</html>
